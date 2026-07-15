@@ -12,40 +12,47 @@ function saveTasks(tasks) {
   fs.writeFileSync("tasks.json", JSON.stringify(tasks, null, 2));
 }
 
-if (command === "add") {
-  if (!description) {
-    console.log("Please provide a task description.");
-    return;
+switch (command) {
+  case "add": {
+    if (!description) {
+      console.log("Please provide a task description.");
+      return;
+    }
+
+    const tasks = loadTasks();
+    let id;
+    if (tasks.length === 0) {
+      id = 1;
+    } else {
+      id = tasks[tasks.length - 1].id + 1;
+    }
+    const task = {
+      id,
+      description,
+      status: "todo",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    tasks.push(task);
+    saveTasks(tasks);
+    console.log(`task successfully added (ID: ${id})`);
+    break;
   }
 
-  const tasks = loadTasks();
-  let id;
-  if (tasks.length === 0) {
-    id = 1;
-  } else {
-    id = tasks[tasks.length - 1].id + 1;
-  }
-  const task = {
-    id: id,
+  case "list": {
+    const tasks = loadTasks();
+    const status = args[1];
+    let filteredTasks = tasks;
+    if (status) {
+      filteredTasks = tasks.filter((task) => task.status === status);
+    }
 
-    description: description,
-    status: "todo",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-  tasks.push(task);
-  saveTasks(tasks);
-  console.log(`task successfully added (ID: ${id})`);
-}
-
-if (command === "list") {
-  const tasks = loadTasks();
-  if (tasks.length === 0) {
-    console.log("No tasks found.");
-    return;
-  }
-  for (const task of tasks) {
-    console.log(`
+    if (filteredTasks.length === 0) {
+      console.log("No matching tasks found.");
+      return;
+    }
+    for (const task of filteredTasks) {
+      console.log(`
 --------------------------------------
 ID: ${task.id}
 Description: ${task.description}
@@ -54,90 +61,89 @@ Created At: ${task.createdAt}
 Updated At: ${task.updatedAt}
 --------------------------------------
     `);
+    }
+    break;
   }
-}
 
-if (command === "update") {
-  const tasks = loadTasks();
-  const id = Number(args[1]);
-  const newDescription = args[2];
-  const task = tasks.find((task) => task.id === id);
-  if (!task) {
-    console.log("Task not found");
-    return;
+  case "update": {
+    const tasks = loadTasks();
+    const id = Number(args[1]);
+    const newDescription = args[2];
+    const task = tasks.find((task) => task.id === id);
+    if (!task) {
+      console.log("Task not found");
+      return;
+    }
+    if (!newDescription) {
+      console.log("Please provide a new description.");
+      return;
+    }
+    task.description = newDescription;
+    task.updatedAt = new Date().toISOString();
+    saveTasks(tasks);
+    console.log(`Task updated successfully (ID: ${id})`);
+    break;
   }
-  if (!newDescription) {
-    console.log("Please provide a new description.");
-    return;
+
+  case "delete": {
+    const tasks = loadTasks();
+
+    const id = Number(args[1]);
+    const updatedTasks = tasks.filter((item) => item.id !== id);
+    if (tasks.length === updatedTasks.length) {
+      console.log("Task not found.");
+      return;
+    }
+    saveTasks(updatedTasks);
+    console.log(`task deleted with id: ${id}`);
+    break;
   }
-  task.description = newDescription;
-  task.updatedAt = new Date().toISOString();
-  saveTasks(tasks);
-  console.log(`Task updated successfully (ID: ${id})`);
-}
 
-if (command === "delete") {
-  const tasks = loadTasks();
+  case "mark-done": {
+    const tasks = loadTasks();
+    const id = Number(args[1]);
 
-  const id = Number(args[1]);
-  const updatedTasks = tasks.filter((item) => item.id !== id);
-  if (tasks.length === updatedTasks.length) {
-    console.log("Task not found.");
-    return;
+    const task = tasks.find((task) => task.id === id);
+    if (!task) {
+      console.log("Task not found");
+      return;
+    }
+
+    task.status = "done";
+    task.updatedAt = new Date().toISOString();
+    saveTasks(tasks);
+    console.log(`Task marked as done successfully (ID: ${id})`);
+    break;
   }
-  saveTasks(updatedTasks);
-  console.log(`task deleted with id: ${id}`);
-}
 
+  case "mark-in-progress": {
+    const tasks = loadTasks();
+    const id = Number(args[1]);
 
-if (command === "mark-done") {
-  const tasks = loadTasks();
-  const id = Number(args[1]);
-  
-  const task = tasks.find((task) => task.id === id);
-  if (!task) {
-    console.log("Task not found");
-    return;
+    const task = tasks.find((task) => task.id === id);
+    if (!task) {
+      console.log("Task not found");
+      return;
+    }
+
+    task.status = "in-progress";
+    task.updatedAt = new Date().toISOString();
+    saveTasks(tasks);
+    console.log(`Task marked in-progress successfully (ID: ${id})`);
+    break;
   }
-  
-  task.status="done"
-  task.updatedAt = new Date().toISOString();
-  saveTasks(tasks);
-  console.log(`Task marked as done successfully (ID: ${id})`);
-}
-
-if (command === "mark-in-progress") {
-  const tasks = loadTasks();
-  const id = Number(args[1]);
-  
-  const task = tasks.find((task) => task.id === id);
-  if (!task) {
-    console.log("Task not found");
-    return;
+  default: {
+    console.log(`
+      Usage:
+      node task-cli.js add "Task description"
+      node task-cli.js list
+      node task-cli.js list done
+      node task-cli.js list todo
+      node task-cli.js list in-progress
+      node task-cli.js update <id> "New description"
+      node task-cli.js delete <id>
+      node task-cli.js mark-done <id>
+      node task-cli.js mark-in-progress <id>
+    `);
   }
-  
-  task.status="in-progress"
-  task.updatedAt = new Date().toISOString();
-  saveTasks(tasks);
-  console.log(`Task marked in-progress successfully (ID: ${id})`);
-}
-
-
-if (command === "list-done") {
-  const tasks = loadTasks();
-  const updatedTasks = tasks.filter((item) => item.status === "done");
-  if (tasks.length === updatedTasks.length) {
-    console.log("Tasks not found.");
-    return;
-  }
-  
-  console.log(`
-  -----------------------------------------
-  ID: {updatedTasks.id}
-  Description: {updatedTasks.description} 
-  Status: {updatedTasks.status}
-  Added At: {updatedTasks.addedAt}
-  Updated At: {updatedTasks.updatedAt}
-  -----------------------------------------
-  `);
 }
