@@ -2,8 +2,6 @@
 
 A simple Command Line Interface (CLI) application built with Node.js to manage your daily tasks. Tasks are stored locally in a `tasks.json` file using Node.js' built-in `fs` module.
 
-#Project Url 
-https://roadmap.sh/projects/task-tracker
 
 ## Features
 
